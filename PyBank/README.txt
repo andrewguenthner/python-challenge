@@ -15,7 +15,7 @@ Design doc:
 
 Objective:  Automatically summarize profit and loss information
 from the file budget_data.csv, with results displayed in both
-the terminal and an output file.
+the terminal and an output file (PyBank_Results.csv).
 
 Rationale:  This straigtforward task is being automated to save
 time (so we're going to keep it simple).
