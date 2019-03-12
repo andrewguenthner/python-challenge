@@ -25,11 +25,94 @@ import csv
 # means data are from 2000-2099  
 XX = 50    # Must be a positive integer from 0 - 99 
 # For parsing monthly data in mmm format
-MONTH_DICT = {"1":"January","2":"February","3":"March",
-              "4":"april,","5":"May","6":"June",
-              "7":"July","8":"August","9":"September",
-              "10":"October","11":"November",
-              "12":"December"}
+MONTH_DICT = {"jan":1,"feb":2,"mar":3,"apr":4,
+              "may":5,"jun":6,"jul":7,"aug":8,
+              "sep":9,"oct":10,"nov":11,"dec":12}
+# {"1":"January","2":"February","3":"March",
+ #             "4":"april,","5":"May","6":"June",
+  #            "7":"July","8":"August","9":"September",
+   #           "10":"October","11":"November",
+    #          "12":"December"}
+
+def add_month_index(labels, month_key, base_year):
+      """ Takes a list of [M|m]mm[*]-yy month labels, a dictionary of
+      month keys, and a base_year, and returns two objects,
+      a list of integers that allows for sorting, and a 
+      count of entries it fails to interpret.  The 
+      integer created corresponds to the number of months 
+      after the start of base_year, so if base_year = 50
+      and the label is Jan-50, the integer will be 1, if the
+      label is Dec-51, the integer will be 24, but if the
+      label is Jan-40, the integer will be 90 * 12 + 1 = 1081"""
+    # Initialize
+    month_index = []
+    readerrors = 0
+    # Get month and year values from string, month_id = 0 if not found, year_id = -1 if error
+    for i, item in enumerate(labels):
+        month_id = month_key.getkey(item[0:2].lower(),0)
+        try:
+            year_id = int(item[-3:-1])
+        except ValueError:
+            year_id = -1
+        # Either convert a valid month_id and year_id to the desired integer, or generate 0
+        if month_id > 0:
+            if year_id > base_year:
+                month_index.append(year_id - base_year) * 12 + month_id
+            elif year_id >= 0:
+                month_index.append(year_id + 100 - base_year) * 12 + month_id
+            else:
+                readerrors += 1
+                month_index.append(0)
+        else:
+            readerrors += 1
+            month_index.append(0)
+    return month_index, readerrors
+
+def sort_by_month (key, label, val):
+"""Implimments an insertion sort using "key" as the sort key
+   and taking label and val along for the ride.  See design
+   doc for rationale"""
+    for i in range(len(key)):
+        cursor = key[i]
+        tagalong1 = label[i]
+        tagalong2 = val[i]
+        pos = i
+        while pos > 0 and key[pos - 1] > cursor:  # first half of swap
+            key[pos] = key[pos - 1]
+            label[pos] = label[po - 1]
+            val[pos] = val[pos - 1]
+            pos = pos - 1
+            key[pos] = cursor # second half of swap
+            label[pos] = tagalong1
+            val[pos] = tagalong2
+    return key, label, val 
+
+def clean_data(key, label, val):
+"""This function expects three coupled lists sorted by key.  
+   Anything with a key value of zero is assumed bad and removed.
+   The second or more occurrene of anything with the same key is removed.
+   If there is a gap between consecutive keys, the "missing values" are 
+   counted but no rows are added."""
+    # Initialize 
+    i = 0
+    cut_count = 0
+    gap_count = 0
+    while i < len(key):
+        if key[i] == 0:   # Cut out anything marked as invalid
+            del key[i]
+            del label[i]
+            del val[i]
+        elif key[i+1] == key[i]:   #Remove duplicates and track how many were cut
+            del(key[i+1])
+            del(label[i+1])
+            del(val[i+1])
+            cut_count += 1
+        else:
+            i += 1
+    # With every row being a sorted non-zero key and no duplicates, gap-counting is easy
+    gap_count = key[-1] - key[0] - len(key) + 1   
+    return key, label, val, cut_count, gap_count 
+
 in_file = os.path.join("..","Resources","budget_data.csv")
 out_file = os.path.join("PyBank_results.csv")
 # Handle 'file not found' errors 
@@ -37,7 +120,7 @@ input_success = False
 try:
     # Read in the CSV file and skip the header row
     with open(in_file, 'r') as csv_file:
-        csvreader = csv.reader(csv_File, delimiter=',')
+        csvreader = csv.reader(csv_file, delimiter=',')
         header = next(csvreader)
         # Initialize the lists that will store data
         month_index = []
@@ -61,8 +144,7 @@ except FileNotFoundError as e:
 bad_rows = 0  # Will count & flag bad rows
 extras = 0 # Will flag & count duplicated monthly data
 gaps = 0 # Will flag & count missing months 
-# First, decode and assign an index to each month label
-# This function also tosses out any bad rows
+# First, decode and assign an index to each month label (returns 0 for bad data)
 month_index, bad_rows = add_month_index(month_label, MONTH_DICT, XX)
 # Now, use the index to ensure months are sorted
 month_index, month_label, profit_value = sort_by_month(month_index, month_label, profit_value)
