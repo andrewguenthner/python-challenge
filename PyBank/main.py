@@ -13,16 +13,11 @@ Important design note:  this file is meant for monthly data, so
 it does not expect extremely large data sets.
 
 Written by:  Andrew Guenthner, UC Berkeley Extension
-Version:  1.0   10-Mar-2019
+Version:  1.0   12-Mar-2019
 Github:  https://github.com/andrewguenthner/python-challenge
 """
 import os
 import csv
-
-# This is the "base year" for data,
-# a value of "50" indicates that data in mmm-yy
-# format extend from 1950 to 2049, not XX = 00
-# means data are from 2000-2099  
 
 # For parsing monthly data in mmm format
 MONTH_DICT = {"jan":1,"feb":2,"mar":3,"apr":4,
