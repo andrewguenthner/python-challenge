@@ -82,10 +82,10 @@ W) finish by writing the output table to terminal and file
   R.0 -- define entry-dict, set XX (year-base 19XX)
   R.1 -- import libs
   R.2 -- set path
-  R.3 -- create reader object (reader)
-  R.4 -- use next to skip header
-  R.5 -- use a try: to enclose rest of R, P and W with a EOFError except w/
+  R.3 -- use a try: to enclose rest of R4-R5 with a EOFError except w/
          message to terminal and line in output file 
+  R.4 -- create reader object (reader)
+  R.5-- use next to skip header
   R.6 -- initialize month-num[], month-label[], profit-value[]
   R.7 -- for row in reader:
   R.7.1     month-label.append(row[0])
@@ -147,13 +147,12 @@ W) finish by writing the output table to terminal and file
   F1.3.3    except value/dict error:  month-id = 0
   F1.3.4    try:   year = int(date-list[item][-3:-1])
   F1.3.5    except valueerror:  year = -1
-  F1.3.6    if year > year-base:
+  F1.3.6    if year > year-base and month-id > 0:
   F1.3.6.1      num-list.append((year + 1900 - base)*12 + month-id)
-  F1.3.7    elif year >= 0:
+  F1.3.7    elif year >= 0 and month-id > 0
   F1.3.7.1      num-list.append((year + 2000 - base)*12 + month-id)
   F1.3.8    else:  
-  F1.3.8.1      num-list.append(0)
-  F1.3.8.2      readerrors += 1
+  F1.3.8.1      readerrors += 1
   F1.4  return num-list, readerrors 
 
   F2.  Insertion-type sort function (key[], label[], val[]) -- we'll do this type 
@@ -176,7 +175,7 @@ W) finish by writing the output table to terminal and file
  F2.1.6     arr[pos] = cursor -- second half of swap
  F2.1.7     label[pos] = tagalong1
  F2.1.8     val[pos] = tagalong2
- F2.2 -- return key, val 
+ F2.2 -- return key, labels, val 
 
  F3.  "Cut-n-fill" function (key[], label[], val[]) -- cut repeats & fill gaps
       """This function requires a sorted numerical key array
