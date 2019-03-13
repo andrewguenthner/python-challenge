@@ -8,7 +8,7 @@ the script.  The input file should include a header row and
 and the third with an election candidate name.
 
 It will output a simple vote summary to the terminal as well as to
-a CSV file named PyPoll_Results.csv.  
+a CSV file named PyPoll_results.csv.  
 
 Design doc:
 
@@ -24,23 +24,22 @@ Expected input:  CSV data file with arbitrary number of rows.
 The program will expect a header row, and exactly three columns
 of data.  The header row content will be checked, as will 
 the presence of at least one row of vote data.  Column 1 will
-be an ID number. Column 2 will be a county name.  Column 3 will
-be a candidate name.  For this script, we will be very strict 
+be an ID number (just digits, no minus signs or decimals).
+Column 2 will be a county name and Column 3 will be a candidate name
+(any non-empty value is OK). For this script, we will be very strict 
 about errors.  If the script encounters an error in the form of:
 1) a non-numeric voter ID, 2) no county entered, or 3) no candidate
-name listed, it will output an error message asking the user to
-check the file for problems.  It wil not output any "provisional"
+name listed, it will output an error message, rather than "provisional"
 data, and in fact it will not execute any algorithm that could
 generate any kind of vote count data unless the input data is 
-formatted perfectly.  (The script's job is to count valid votes,
-not geneate "what-if" scenarios.)
+formatted perfectly.  (It is important that this script avoid
+even the appearance of trying to "interpret" votes.)  
 
 
 Expected output:
 The output will be strictly controlled, in both terminal and
-PyPoll_Results.csv files.  If no errors are found, it will look
-like the following
-example:  
+PyPoll_results.txt files.  If no errors are found, it will look
+like the following example:  
 
   Election Results
   -------------------------
@@ -66,109 +65,126 @@ If there is a tie, it will look like the following
   A tie among candidates with the most votes was found.  
   -------------------------
 
-If an error is found, it will look like the following:
+If an error is found, it will generate one of the follwing
+general messages.
 
-One or more errors were encountered in the input data file.  
-As a result, the vote-counting portion of the script was skipped.
-Please check the input file before attempting to re-run the script.
+There was an error opening the input file.  No results computed.
 
-If data processing is interrupted or in some way an improper behavior
-is detected, then the output will look like the following:
+An unexpected event stopped the file check from running.  No results computed.
 
-An error was encountered during processing of the data.  
-The program has terminated without saving or displaying
-results.  Please cotact your supervisor. 
+The file check encountered an anomaly.  No results computed.
+
+An anomaly in data processing occurred.  Results have not been reported.
+
 
 "Total Votes" will provide the sum of all votes in the table.
 The next section will provide the name, percentage, and vote total
 for all candidates with votes.
 
 The final row will either state the candidate name with the most
-votes if no tie is encountered.
+votes if no tie is encountered, or state that a tie occurred.
+
 
   Procedural Outline
-R) Use csvreader to input file.  
-C) Check file for valid date, proceed only if all data is valid
+R) Use csvreader to test opening the file and creating the
+reader object.  The use of open files will be kept to the minimum
+required.  
+C) Check file for valid data, proceed only if all data is valid
+(even the data we don't use directly).  Due to the sensitive 
+and public nature of the analysis, the underlying assumption
+is that if anything at all is amiss or unexpected, it is better
+not to proceed than to make an assumption about what is "OK to ignore".
 P) Process data by reading file line by line and building a results list.
-Check that every line of the file was analyzed.  
+Check that every line of the file was analyzed.  Use simple data forms
+and methods to make the code easy to understand.  Thoroughly check
+that the process behaved exactly as intended before proceeding  
 W) finish by writing the output table to terminal and file
 
   Detailed Procedures
   R.1 -- import libs
-  R.2 -- set path
-  R.3 -- use a try: to enlcoe rest of R; with error send bad-file message
-  R.4 -- create reader object (reader) -- use with for R and C, the 
-  file will be closed and re-opened for processing -- this will check
-  that we can open, read everything, and close without a problem before
-  we actually do any counting
-  C.1 -- Initialize valid-flag, row-OK [], row-count to 0
-  C.2 -- for row in reader:
-  C.2.1      if row-count == 0:
-  C.2.1.1       if (row[0] == "Voter ID") and (row[1] == "County") and (row[2] = "Canddiate"):
+  R.2 -- set input and output paths 
+  R.3 -- initialize:  ok-to-proceed = false
+  R.3 -- try: open file and set reader
+  R.3.1    ok-to-proceed = true 
+  R.4 -- except OSError: write error message to terminal & file
+  C -- If ok-to-proceed == true:  (else: write error message)
+  C.1 -- Initialize valid-flag = false, row-ok = [], row-count = 0
+  C.2 -- open file, make reader, for row in reader:
+  C.2.1      if row-count == 0:  (check for correct header)
+  C.2.1.1       if (row[0] == "Voter ID") and (row[1] == "County") and (row[2] = "Canddiate")::
   C.2.1.1.1         row-OK.append(True)
   C.2.2.2       else:  row-OK.append(False)
   C.2.2      else:
   C.2.2.1       row-check = False
   C.2.2.2       try: 
-  C.2.2.2.1         voter-ID = int(row[0]) 
-  C.2.2.2.2         if len(row[1]) > 0 and len(row[2] > 0):
-  C.2.2.2.2.1           row-check = True
-  C.2.2.3        except ValueErorr: continue
+  C.2.2.2.1         if int(row[0]) >= 0 and len(row[1]) > 0 and len(row[2]) > 0:
+  C.2.2.2.1.1           row-check = True
+  C.2.2.3        except ValueErorr or IndexError: pass
   C.2.2.4        row-OK.append(row-check)
-  C.2.3     row-count += 1
-  C.3 -- if len(Row-OK.filter(True)) == len(Row-OK) == row-count:
-  C.3.1     valid-flag = True -- only if every row was checked and marked True
-For processing, the data structure is kept simple to keep the code 
-easy to understand.  Less-known or complex Python functions are avoided. 
-The elements of the data structure are kept to a minimum also.
-  P.1 -- if valid-flag = True:
-  P.1.1     try:  
-  P.1.1.1       reader2 = csvreader(file) -- re-open file, it will close 
-                at end of C
-  P.1.1.2       Initialize: rows-counted = 0, total-votes = 0,
-                candiate_list [], candidate_votes []
-  P.1.1.3       next reader2
-  P.1.1.4       for row in reader2:
-  P.1.1.4.1         candidate = row[2]
-  P.1.1.4.2         entry-found = False
-  P.1.1.4.3         for i,entry in enumerate(candidate_list):
-  P.1.1.4.3.1          if candidate == entry:
-  P.1.1.4.3.1.1            candidate_votes[i] += 1
-  P.1.1.4.3.1.2            entry-found = True
-  P.1.1.4.3.2       if entry-found == False:
-  P.1.1.4.3.2.1            candidate_list.append(candidate)
-  P.1.1.4.3.2.2            candidate_votes.append(0)
-  P.1.1.4.4         rows-counted += 1
-  P.1.1.5       total-votes = candidate_votes.sum()
-  P.1.2     except:  process-error message
-  P.2 -- else:
-  P.2.1     output file-error message
-  for simplicity we will decouple P and W, we could do it in one big 
-  loop, but that would make the script hard to follow 
+  C.2.3     row-count += 1 (count every row actually read, don't just infer)
+  C.3 -- if len(Row-OK.count(True)) == len(Row-OK) == row-count:
+  C.3.1     valid-flag = True -- only if each and every row was checked and marked True
+  C.4 -- ok-to-proceed = valid-flag 
+The tallying process will sacrifice efficiency for checking and 
+re-checking everything (in classic bureaucratic fashion) 
+  P. -- if ok-to-proceed == True:    (else:  write error message)
+  P.1 -- initialize header-scanned = False, votes-counted, total-votes, rows-counted = 0
+         candidate-list, candidate-votes = []
+  P.2    open file and generate reader object 
+  P.3    for row in reader2:
+  P.3.1	      if rows-counted == 0:  (this will be for the header and first valid vote) 
+  P.3.1.1        if header-scanned == False: (do this only once, the first time through)
+  P.3.1.1.1           header-scanned = True  (confirm that a header was scanned) 
+  P.3.1.2        else:   
+  P.3.1.2.1           candidate = row[2]  
+  P.3.1.2.2           candidate-list.append(candidate) (this will be the first one)
+  P.3.1.2.3           candidate-votes.append(1)
+  P.3.1.2.4           total-votes += 1 (always do this when we add a vote)
+  P.3.1.2.5           rows-counted += 1 (always do this when we go through a row)
+  P.3.2       else: (for the third and continuing rows)  
+  P.3.2.1         candidate = row[2]
+  P.3.2.2         rows-counted += 1
+  P.3.2.3         entry-found = False
+  P.3.2.4         for i,entry in enumerate(candidate-list): (check list)
+  P.3.2.4.1           if candidate == entry: (then add to list)
+  P.3.2.4.1.1              candidate-votes[i] += 1
+  P.3.2.4.1.2              total-votes += 1
+  P.3.2.4.1.3              entry-found = True
+  P.3.2.4.2           if entry-found == False:
+  P.3.2.4.2.1              candidate-list.append(candidate)
+  P.3.2.4.2.2              candidate-votes.append(1)
+  P.3.2.4.2.3              total-votes += 1
+  P.4 -- if rows-counted == total-votes == sum(candidate-votes) == row-count - 1:
+  P.4.1         ok-to-proceed = True
+  P.5 -- else:       ok-to-procee = False
+   (this is a stringent test, total-votes counts how many times a vote was added in
+    code, sum(candidate-votes) checks that it really adds up to the total (i.e. the
+    code works as it should), rows-counted double-checks that every time we intended to
+    count a vote, we did (again, code works as it should), row-count enables us to 
+    compare this to the expected characteristics of the file)
 
-  W.1 --  if valid-flag == True and rows-counted == total-votes:  (sort list and write)
-          we will use a selection sort to make the method simple and
-          transparent
-  W.1.1       for i in range(len(candidate_list)): 
-  W.1.1.1        max_index = i 
-  W.1.1.2        for j in range(i+1, len(candidate_list)): 
-  W.1.1.2.1         if candidate_list[j] > candidate_list[max_index]: 
-  W.1.1.2.1.1            max_index = j 
-  W.1.1.3        candidate_list[i], candidate_list[max_index] =
-                 candidate_list[max_index] , candidate_list[i]
-  W.1.1.4        candidate_votes[i], candidate_votes[max_index] =
-                 candidate_votes[max_index] , candidate_votes[i]
-  W.1.2       open output file for writing, use with 
-  W.1.3       write header rows to terminal and file
-  W.1.4       write total votes line to terminal and file, use total-votes
-  W.1.5       write separator row to terminal and file
-  W.1.6       for line in range(len(canidate_list)):
-  W.1.6.1         write candidate name, vote total, and formatted percentage
-                  (use an on the fly division)
-  W.1.7       write separator row to terminal and file
-  W.1.8       if candidate_votes[0] == candidate_votes[1]:
-  W.1.8.1         write tie message to terminal and file
-  W.1.9       else:
-  W.1.9.1         write Winner + candidate_list[0] to terminal and file
-  W.2 -- else:  (somehow results were not valid)
-  W.2.1      output processing-error message 
+  W.  -- if ok-to-proceed = True -- else: write error message
+  W.1 -- selection-sort -- this was chosen because although not efficient
+for long lists, if someone asks, "how exactly is the winner of the election determined?"
+we want to be able to explain every detail with ease.  
+        for i in range(len(candidate-list)): 
+  W.1.1     max-index = i 
+  W.1.2     for j in range(i+1, len(candidate_list)): 
+  W.1.2.1        if candidate-votes[j] > candidate-votes[max-index] 
+  W.1.2.1.1            max-index = j 
+  W.1.2.2        candidate-list[i], candidate-list[max_index] =
+                 candidate-list[max_index] , candidate-list[i]
+  W.1.2.3        candidate-votes[i], candidate-votes[max_index] =
+                 candidate-votes[max_index] , candidate-votes[i]
+  W.2 -- open output file for writing -- all writes will be terminal & fiile
+  W.3 -- write header rows 
+  W.4 -- write total votes line 
+  W.5 -- write separator row 
+  W.6 -- for i, candidate-name in enumerate(candidate-list):
+  W.6.1        write candidate-name, percentage, and votes
+                  (use an on the fly computation)
+  W.7 -- write separator row 
+  W.8 -- if candidate_votes[0] == candidate_votes[1]: (there's a tie)
+  W.8.1      write tie message to terminal and file
+  W.9 -- else:
+  W.9.1      write Winner + candidate_list[0]  
