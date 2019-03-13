@@ -88,9 +88,9 @@ def clean_data(key, label, val):
             del label[i]
             del val[i]
         elif key[i+1] == key[i]:   #Remove duplicates and track how many were cut
-            del(key[i+1])
-            del(label[i+1])
-            del(val[i+1])
+            del key[i+1]
+            del label[i+1]
+            del val[i+1]
             cut_count += 1
         else:
             i += 1
