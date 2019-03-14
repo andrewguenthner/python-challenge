@@ -52,7 +52,7 @@ if (OK_to_proceed) == True:
             else:                   # for all the other rows
                 row_check = False
                 try:
-                    if (int(row[0]) >= 0) (len(row[1]) > 0) and (len(row[2]) > 0):
+                    if (int(row[0]) >= 0) and (len(row[1]) > 0) and (len(row[2]) > 0):
                         row_check = True
                 except ValueError as e:
                     pass
@@ -75,7 +75,6 @@ else:  #This should only happen if soan unforeseen error stopped the csvreader f
 if (OK_to_proceed) == True:
     # Initialize
     header_scanned = False
-    votes_counted = 0
     total_votes = 0
     rows_counted = 0
     candidate_list = []  # For simplicity and transparency, the
